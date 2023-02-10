@@ -14,7 +14,7 @@ import (
 //    "log"
 //    "strings"
     "github.com/buger/jsonparser"
-    "github.com/akamensky/argparse"
+//    "github.com/akamensky/argparse"
     "sigs.k8s.io/yaml"
 //    "gopkg.in/yaml.v2"
     "crypto/aes"
@@ -25,8 +25,10 @@ import (
     "encoding/base64"
 )
 
+var Passphrase = "“You can use logic to justify almost anything. That’s its power. And its flaw. –Captain Cathryn Janeway"
+
 // Structure field names need to be capitalized to be exported (public)
-type central struct {
+type Central_struct struct {
     Base_url string `yaml:"base_url"`
     Customer_id string `yaml:"customer_id"`
     Client_id string `yaml:"client_id"`
@@ -37,47 +39,47 @@ type central struct {
 
 
 func createHash(key string) string {
-        hasher := md5.New()
-        hasher.Write([]byte(key))
-        return hex.EncodeToString(hasher.Sum(nil))
+	hasher := md5.New()
+	hasher.Write([]byte(key))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-func Encrypt(data []byte, passphrase string) []byte {
-        block, _ := aes.NewCipher([]byte(createHash(passphrase)))
-        gcm, err := cipher.NewGCM(block)
-        if err != nil {
-                panic(err.Error())
-        }
-        nonce := make([]byte, gcm.NonceSize())
-        if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-                panic(err.Error())
-        }
-        ciphertext := gcm.Seal(nonce, nonce, data, nil)
-        return ciphertext
+func Encrypt(data []byte, Passphrase string) []byte {
+	block, _ := aes.NewCipher([]byte(createHash(Passphrase)))
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		panic(err.Error())
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		panic(err.Error())
+	}
+	ciphertext := gcm.Seal(nonce, nonce, data, nil)
+	return ciphertext
 }
 
-func Decrypt(data []byte, passphrase string) []byte {
-        key := []byte(createHash(passphrase))
-        block, err := aes.NewCipher(key)
-        if err != nil {
-                panic(err.Error())
-        }
-        gcm, err := cipher.NewGCM(block)
-        if err != nil {
-                panic(err.Error())
-        }
-        nonceSize := gcm.NonceSize()
-        nonce, ciphertext := data[:nonceSize], data[nonceSize:]
-        plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
-        if err != nil {
-                panic(err.Error())
-        }
-        return plaintext
+func Decrypt(data []byte, Passphrase string) []byte {
+	key := []byte(createHash(Passphrase))
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err.Error())
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		panic(err.Error())
+	}
+	nonceSize := gcm.NonceSize()
+	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		panic(err.Error())
+	}
+	return plaintext
 }
 
 //--------------------------------------------------------
 
-func Test_central(central_info central) (int, string, string) {
+func Test_central(central_info Central_struct) (int, string, string) {
 
   token := central_info.Token
   base_url := central_info.Base_url
@@ -162,9 +164,9 @@ func Test_central(central_info central) (int, string, string) {
 }
 
 
-func Read_DB() central {
+func Read_DB() Central_struct {
 
-     var central_info central
+     var central_info Central_struct
      var tmp_byte []byte
 
      filename:= "CTconfig.yml"
@@ -179,37 +181,37 @@ func Read_DB() central {
      }
 
      tmp_byte, err = base64.StdEncoding.DecodeString(central_info.Base_url)
-     central_info.Base_url = string(decrypt(tmp_byte, passphrase))
+     central_info.Base_url = string(Decrypt(tmp_byte, Passphrase))
 
      tmp_byte, err = base64.StdEncoding.DecodeString(central_info.Customer_id)
-     central_info.Customer_id = string(decrypt(tmp_byte, passphrase))
+     central_info.Customer_id = string(Decrypt(tmp_byte, Passphrase))
 
      tmp_byte, err = base64.StdEncoding.DecodeString(central_info.Client_id)
-     central_info.Client_id = string(decrypt(tmp_byte, passphrase))
+     central_info.Client_id = string(Decrypt(tmp_byte, Passphrase))
 
      tmp_byte, err = base64.StdEncoding.DecodeString(central_info.Client_secret)
-     central_info.Client_secret = string(decrypt(tmp_byte, passphrase))
+     central_info.Client_secret = string(Decrypt(tmp_byte, Passphrase))
 
      tmp_byte, err = base64.StdEncoding.DecodeString(central_info.Token)
-     central_info.Token = string(decrypt(tmp_byte, passphrase))
+     central_info.Token = string(Decrypt(tmp_byte, Passphrase))
 
      tmp_byte, err = base64.StdEncoding.DecodeString(central_info.Refresh_token)
-     central_info.Refresh_token = string(decrypt(tmp_byte, passphrase))
+     central_info.Refresh_token = string(Decrypt(tmp_byte, Passphrase))
 
      return(central_info)
 }
 
-func Write_DB(central_info_global central) int {
+func Write_DB(central_info_global Central_struct) int {
 
-     var central_info central
+     var central_info Central_struct
 
-     // Now encrypt it all into the structure
-     central_info.Base_url = string(base64.StdEncoding.EncodeToString(encrypt([]byte(central_info_global.Base_url), passphrase)))
-     central_info.Customer_id = string(base64.StdEncoding.EncodeToString(encrypt([]byte(central_info_global.Customer_id), passphrase)))
-     central_info.Client_id = string(base64.StdEncoding.EncodeToString(encrypt([]byte(central_info_global.Client_id), passphrase)))
-     central_info.Client_secret = string(base64.StdEncoding.EncodeToString(encrypt([]byte(central_info_global.Client_secret), passphrase)))
-     central_info.Token = string(base64.StdEncoding.EncodeToString(encrypt([]byte(central_info_global.Token), passphrase)))
-     central_info.Refresh_token = string(base64.StdEncoding.EncodeToString(encrypt([]byte(central_info_global.Refresh_token), passphrase)))
+     // Now Encrypt it all into the structure
+     central_info.Base_url = string(base64.StdEncoding.EncodeToString(Encrypt([]byte(central_info_global.Base_url), Passphrase)))
+     central_info.Customer_id = string(base64.StdEncoding.EncodeToString(Encrypt([]byte(central_info_global.Customer_id), Passphrase)))
+     central_info.Client_id = string(base64.StdEncoding.EncodeToString(Encrypt([]byte(central_info_global.Client_id), Passphrase)))
+     central_info.Client_secret = string(base64.StdEncoding.EncodeToString(Encrypt([]byte(central_info_global.Client_secret), Passphrase)))
+     central_info.Token = string(base64.StdEncoding.EncodeToString(Encrypt([]byte(central_info_global.Token), Passphrase)))
+     central_info.Refresh_token = string(base64.StdEncoding.EncodeToString(Encrypt([]byte(central_info_global.Refresh_token), Passphrase)))
 
      yaml_vars, err := yaml.Marshal(&central_info)
      if err != nil {
@@ -232,7 +234,7 @@ func Init_DB() {
      var client_secret string
      var token string
      var refresh_token string
-     var central_info central
+     var central_info Central_struct
 
      fmt.Println("Welcome to the database initialization")
      fmt.Println("")
@@ -256,6 +258,7 @@ func Init_DB() {
      central_info.Token = token 
      central_info.Refresh_token = refresh_token 
 
-     write_DB(central_info)
+     Write_DB(central_info)
 
 }
+
