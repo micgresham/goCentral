@@ -18,7 +18,9 @@ import (
     "encoding/base64"
 )
 
-var Passphrase = "“You can use logic to justify almost anything. That’s its power. And its flaw. –Captain Cathryn Janeway"
+//This is default passphrase for encrypting/decrypting the data file.
+//Set it to something unique in your program
+var Passphrase = "The rain in Spain stays mainly on the plains"
 
 // Structure field names need to be capitalized to be exported (public)
 type Central_struct struct {
@@ -71,6 +73,63 @@ func Decrypt(data []byte, Passphrase string) []byte {
 }
 
 //--------------------------------------------------------
+func RefreshApiToken(central_info Central_struct) (int, string, string, int64) {
+
+  token := central_info.Token
+  base_url := central_info.Base_url
+  client_id := central_info.Client_id
+  client_secret := central_info.Client_secret
+  refresh_token := central_info.Refresh_token
+  var expires_in int64 = 0
+
+  oath2_url := fmt.Sprintf("%s/oauth2/token",base_url)
+
+  c := http.Client{Timeout: time.Duration(10) * time.Second}
+  req, err := http.NewRequest("POST", oath2_url, nil)
+  if err != nil {
+      fmt.Printf("error %s", err)
+      return 500,"","",0
+  }
+  q := req.URL.Query()
+  q.Add("grant_type","refresh_token")
+  q.Add("client_id",client_id)
+  q.Add("client_secret",client_secret)
+  q.Add("refresh_token",refresh_token)
+  req.URL.RawQuery = q.Encode()
+
+  req.Header.Add("Content-Type", `application/json`)
+  req.Header.Add("Authorization", fmt.Sprintf("Bearer %s",fmt.Sprintf(token)))
+  req.Header.Add("limit","1")
+  resp2, err := c.Do(req)
+  if err != nil {
+      fmt.Printf("error %s", err)
+      return 500,"","",0
+  }
+
+  defer resp2.Body.Close()
+  body, err := ioutil.ReadAll(resp2.Body)
+  fmt.Printf("%s",body)
+  fmt.Printf("**************\n")
+  refresh_token, err = jsonparser.GetString(body, "refresh_token")
+  if err != nil {
+     fmt.Printf("error %s", err)
+     return 500,"","",0
+  }
+  token, err = jsonparser.GetString(body, "access_token")
+  if err != nil {
+     fmt.Printf("error %s", err)
+     return 500,"","",0
+  }
+  expires_in, err = jsonparser.GetInt(body, "expires_in")
+  if err != nil {
+     fmt.Printf("error %s", err)
+     return 500,"","",0
+  }
+
+
+  return resp2.StatusCode,token,refresh_token,expires_in
+
+}
 
 func Test_central(central_info Central_struct) (int, string, string) {
 
@@ -157,12 +216,12 @@ func Test_central(central_info Central_struct) (int, string, string) {
 }
 
 
-func Read_DB() Central_struct {
+func Read_DB(filename string) Central_struct {
 
      var central_info Central_struct
      var tmp_byte []byte
 
-     filename:= "CTconfig.yml"
+//     filename:= "CTconfig.yml"
 
      yamlFile, err := ioutil.ReadFile(filename)
      if err != nil {
@@ -194,7 +253,7 @@ func Read_DB() Central_struct {
      return(central_info)
 }
 
-func Write_DB(central_info_global Central_struct) int {
+func Write_DB(filename string, central_info_global Central_struct) int {
 
      var central_info Central_struct
 
@@ -212,14 +271,13 @@ func Write_DB(central_info_global Central_struct) int {
        return(1)
      }
 
-     filename:= "CTconfig.yml"
       _, err = os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
       err = ioutil.WriteFile(filename, yaml_vars, 0644)
 
      return(0)
 }
 
-func Init_DB() {
+func Init_DB(filename string) {
 
      var base_url string
      var customer_id string
@@ -251,7 +309,7 @@ func Init_DB() {
      central_info.Token = token 
      central_info.Refresh_token = refresh_token 
 
-     Write_DB(central_info)
+     Write_DB(filename, central_info)
 
 }
 
