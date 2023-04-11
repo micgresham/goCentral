@@ -1,4 +1,3 @@
-module github.com/micgresham/goCentral
+module goCentral
 
 go 1.18
-

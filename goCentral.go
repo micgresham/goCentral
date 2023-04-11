@@ -84,7 +84,7 @@ func RefreshApiToken(central_info Central_struct) (int, string, string, int64) {
 
   oath2_url := fmt.Sprintf("%s/oauth2/token",base_url)
 
-  c := http.Client{Timeout: time.Duration(10) * time.Second}
+  c := http.Client{Timeout: time.Duration(60) * time.Second}
   req, err := http.NewRequest("POST", oath2_url, nil)
   if err != nil {
       fmt.Printf("error %s", err)
@@ -141,7 +141,7 @@ func Test_central(central_info Central_struct) (int, string, string) {
   api_function_url := fmt.Sprintf("%s/configuration/v2/groups",base_url)
   oath2_url := fmt.Sprintf("%s/oauth2/token",base_url)
 
-  c := http.Client{Timeout: time.Duration(10) * time.Second}
+  c := http.Client{Timeout: time.Duration(60) * time.Second}
   req, err := http.NewRequest("GET", api_function_url, nil)
   if err != nil {
       fmt.Printf("error %s", err)
@@ -163,16 +163,16 @@ func Test_central(central_info Central_struct) (int, string, string) {
   
 
   defer resp.Body.Close()
-  body, err := ioutil.ReadAll(resp.Body)
-  fmt.Printf("%s",body)
-  fmt.Printf("**************\n")
+//  body, err := ioutil.ReadAll(resp.Body)
+//  fmt.Printf("%s",body)
+//  fmt.Printf("**************\n")
   if resp.StatusCode == 401 {
     fmt.Println("ACCESS TOKEN is INVALID or EXPIRED.  Refreshing tokens...")
 
-    c := http.Client{Timeout: time.Duration(10) * time.Second}
+    c := http.Client{Timeout: time.Duration(60) * time.Second}
     req, err := http.NewRequest("POST", oath2_url, nil)
     if err != nil {
-        fmt.Printf("error %s", err)
+        fmt.Printf("error1 %s", err)
         return 500,"",""
     }
     q := req.URL.Query()
@@ -187,7 +187,7 @@ func Test_central(central_info Central_struct) (int, string, string) {
     req.Header.Add("limit","1")
     resp2, err := c.Do(req)
     if err != nil {
-        fmt.Printf("error %s", err)
+        fmt.Printf("error2 %s", err)
         return 500,"",""
     }
 
