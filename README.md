@@ -15,7 +15,7 @@ goCentral provides a token management system to stores the operational token inf
 
 Since the data stored and read by Write_DB and Read_DB is encrypted/decryptes using AES encryption, an encryption passphrase is needed.  The library has a default passphrase; however, it is strongly advised to set a unique passphrase when building applications using this library.  Setting a passphrase is done by adding the following line in each application:
 
-###goCentral.Passphrase = "Understanding is a three edged sword. Your side, their side, and the truth. - Kosh"
+   - goCentral.Passphrase = "Understanding is a three edged sword. Your side, their side, and the truth. - Kosh"
 
 Once set, the passphrase will be used when reading and writing to the secure storage DB.  If multiple applications are using the same secure storage DB, they should all use the same passphrase.
 
