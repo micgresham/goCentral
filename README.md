@@ -13,18 +13,13 @@ goCentral provides a token management system to stores the operational token inf
   - Access token (this is the current, valid access token)
   - Refresh token
 
+Since the data stored and read by Write_DB and Read_DB is encrypted/decryptes using AES encryption, an encryption passphrase is needed.  The library has a default passphrase; however, it is strongly advised to set a unique passphrase when building applications using this library.  Setting a passphrase is done by adding the following line in each application:
+
+###goCentral.Passphrase = "Understanding is a three edged sword. Your side, their side, and the truth. - Kosh"
+
+Once set, the passphrase will be used when reading and writing to the secure storage DB.  If multiple applications are using the same secure storage DB, they should all use the same passphrase.
+
 ## Functions
-
-------------------------------------------
-These functions are NOT public
-------------------------------------------
-
-
-### `func createHash(key string) string`
-- Description: Creates a hash value for the given key using the MD5 algorithm.
-- Parameters:
-  - `key`: The input string for which the hash value needs to be created.
-- Returns: The hash value as a hexadecimal string.
 
 ### `func Encrypt(data []byte, Passphrase string) []byte`
 - Description: Encrypts the provided data using the given passphrase.
@@ -39,10 +34,6 @@ These functions are NOT public
   - `data`: The data to be decrypted.
   - `Passphrase`: The passphrase used for decryption.
 - Returns: The decrypted data as a byte slice.
-
-------------------------------------------
-These functions are ARE public
-------------------------------------------
 
 ### `func RefreshApiToken(central_info Central_struct) (int, string, string, int64)`
 - Description: Refreshes the API token for the provided `Central_struct`.
